@@ -30,9 +30,20 @@ public interface Octree
     /// <returns>The newly created Octree</returns>
     public static Octree Create(Vector3 pos, float halfWidth = 1f, uint depth = 1)
     {
-        // TODO: YOUR CODE HERE!
-        // Recursively call Create to initialize the Octree
-        return null;
+        if (depth == 0)
+        {
+            return new OctreeObjects();
+        }
+        else
+        {
+            Octree[] children;
+            for (int i = 0; i < 8; i++)
+            {
+                children[i] = Create()
+            }
+
+            return new OctreeNode(pos, children);
+        }
     }
 }
 
@@ -44,7 +55,11 @@ public class OctreeNode : Octree
     public Vector3 position;
     public Octree[] children;
 
-    // TODO: YOUR CODE HERE
+    public OctreeNode(Vector3 pos, Octree[] children)
+    {
+        this.position = position;
+        this.children = children;
+    }
 
     /// <summary>
     /// Inserts the given particle into the appropriate children. The particle

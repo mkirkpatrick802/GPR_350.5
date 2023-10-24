@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using static CollisionDetection;
 using UnityEngine;
@@ -22,26 +23,33 @@ public class CollisionManager : MonoBehaviour
     [SerializeField]
     private GameObject particlePrefab;
 
+    private List<Sphere> spheres = new List<Sphere>();
     private void Start()
     {
-        // TODO: YOUR CODE HERE
-        // Create the Octree. Create prefabs within the bounding box of the scene.
+        tree = Octree.Create(Vector3.zero, 5);
+        
+        for (int i = 0; i < nStartingParticles; i++)
+        {
+            Sphere sphere = Instantiate(particlePrefab, Vector3.zero, Quaternion.identity).GetComponent<Sphere>();
+            tree.Insert(sphere);
+            spheres.Add(sphere);
+        }
     }
 
     private void TreeCollisionResolution()
     {
-        // TODO: YOUR CODE HERE
-        // Perform sphere-sphere collisions using the Octree
+        tree.ResolveCollisions();
     }
 
     private void StandardCollisionResolution()
     {
-        Sphere[] spheres = FindObjectsOfType<Sphere>();
-        PlaneCollider[] planes = FindObjectsOfType<PlaneCollider>();
-        for (int i = 0; i < spheres.Length; i++)
+        /*PlaneCollider[] planes = FindObjectsOfType<PlaneCollider>();
+        if(spheres.Count < 1) return;
+        
+        for (int i = 0; i < spheres.Count; i++)
         {
             Sphere s1 = spheres[i];
-            for (int j = i + 1; j < spheres.Length; j++)
+            for (int j = i + 1; j < spheres.Count; j++)
             {
                 Sphere s2 = spheres[j];
                 ApplyCollisionResolution(s1, s2);
@@ -50,21 +58,29 @@ public class CollisionManager : MonoBehaviour
             {
                 ApplyCollisionResolution(s1, plane);
             }
-        }
+        }*/
     }
 
     private void FixedUpdate()
     {
         CollisionChecks = 0;
 
-        // TODO: YOUR CODE HERE
-        // Call correct collision resolution type based
-        // on collisionType variable.
+        switch (collisionType)
+        {
+            case CollisionType.Standard:
+                StandardCollisionResolution();
+                break;
+            case CollisionType.Octree:
+                TreeCollisionResolution();
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     private void Update()
     {
-        if (Keyboard.current.cKey.IsPressed())
+        if (Keyboard.current.cKey.wasPressedThisFrame)
         {
             collisionType = collisionType == CollisionType.Standard ? CollisionType.Octree : CollisionType.Standard;
         }

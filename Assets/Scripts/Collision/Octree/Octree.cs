@@ -38,20 +38,41 @@ public interface Octree
         {
             halfWidth /= 2;
             Octree[] children = new Octree[8];
-
+            
+            /*
+             * 
+             * Bits count right to left
+             * 
+             * First bit represents the X axis
+             * Second bit represents the Y axis
+             * Third bit represents the Z axis
+             * 
+             * 0 = 000
+             * 1 = 001
+             * 2 = 010
+             * 3 = 011
+             * 4 = 100
+             * 5 = 101
+             * 6 = 110
+             * 7 = 111
+             * 
+            */
+            
             for (int i = 0; i < 8; i++)
             {
-                //Move Pos on X Axis
-                pos += Vector3.right * ((i & 1) != 0 ? halfWidth : -halfWidth);
+                Vector3 offset = pos;
                 
-                //Move Pos on Y Axis
-                pos += Vector3.up * ((i & 2) != 0 ? halfWidth : -halfWidth);
+                //Move offset up on X axis if it has the first bit assigned, down if not
+                offset += Vector3.right * ((i & 1) != 0 ? halfWidth : -halfWidth);
                 
-                //Move Pos on Z Axis
-                pos += Vector3.forward * ((i & 4) != 0 ? halfWidth : -halfWidth);
+                //Move offset up on Y axis if it has the second bit assigned, down if not
+                offset += Vector3.up * ((i & 2) != 0 ? halfWidth : -halfWidth);
+                
+                //Move offset up on the Z axis if it has the third bit assigned, down if not
+                offset += Vector3.forward * ((i & 4) != 0 ? halfWidth : -halfWidth);
                 
                 //Add Child to List
-                children[i] = Create(pos, halfWidth, depth - 1);
+                children[i] = Create(offset, halfWidth, depth - 1);
             }
 
             return new OctreeNode(pos, children);
@@ -86,25 +107,68 @@ public class OctreeNode : Octree
     /// <param name="sphere">The bounding sphere of the particle to insert.</param>
     public void Insert(Sphere sphere)
     {
-        Vector3 difference = position - sphere.Center;
-        for (int i = 0; i < 8; i++)
+        /*
+         *
+         * Bits count right to left
+         *
+         * First bit represents the X axis
+         * Second bit represents the Y axis
+         * Third bit represents the Z axis
+         *
+         * 0 = 000
+         * 1 = 001
+         * 2 = 010
+         * 3 = 011
+         * 4 = 100
+         * 5 = 101
+         * 6 = 110
+         * 7 = 111
+         *
+         */
+        
+        //Get the child that is absolutely holding the sphere
+        int baseZone = 0;
+        for (int i = 0; i < 3; i++)
         {
-            if (difference.x < sphere.Radius)
+            if (sphere.Center[i] >= position[i])
             {
-                children[i].Insert(sphere);
-                continue;
+                //Shifts the binary number to the left in respect to i:
+                //the result will either be 1, 2, 4
+                baseZone += (1 << i);   
             }
+        }
+        
+        //Add the sphere to the absolute child
+        children[baseZone].Insert(sphere);
 
-            if (difference.y < sphere.Radius)
+        //Get how far away the sphere is from the center of the octree
+        Vector3 difference = sphere.Center - position;
+        
+        //Check the difference with the sphere radius, if the radius is larger,
+        //then the sphere is bleeding into another child
+        int offset = 0; //Offset is used to hold which children are occupied
+        for (int i = 0; i < 3; i++)
+        {
+            if (sphere.Radius > difference[i])
             {
-                children[i].Insert(sphere);
-                continue;
+                offset += (1 << i);
             }
-
-            if (difference.z < sphere.Radius)
-            {
-                children[i].Insert(sphere);
-                continue;
+        }
+        
+        //If offset is less then one, then no other children contain this sphere
+        if(offset < 1) return;
+        
+        //Cycle through all remaining children and see if the radius is bleeding into them using the calculated offset
+        for (int i = 1; i < 8; i++)
+        {
+            //Compares the bits of offset and i to see if i is contained in offset.
+            //If it is then that means baseZone - i is occupied.
+            //If offset is 7 then all children are occupied.
+            //If offset is 6 then the 4th and 2nd children are occupied
+            //If offset is 4 then only the 4th child is occupied.
+            if ((offset & i) == i) 
+            {   
+                children[baseZone - i].Insert(sphere);
             }
         }
     }
@@ -162,6 +226,17 @@ public class OctreeObjects : Octree
     /// </summary>
     public void ResolveCollisions()
     {
+        if(spheres.Count < 2) return;
+        
+        for (int i = 0; i < spheres.Count; i++)
+        {
+            var s1 = spheres[i];
+            for (int j = i + 1; j < spheres.Count; j++)
+            {
+                var s2 = spheres[j];
+                CollisionDetection.ApplyCollisionResolution(s1, s2);
+            }
+        }
     }
 
     /// <summary>

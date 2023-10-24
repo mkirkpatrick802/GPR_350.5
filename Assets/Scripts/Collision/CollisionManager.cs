@@ -64,7 +64,9 @@ public class CollisionManager : MonoBehaviour
 
     private void Update()
     {
-        // TODO: YOUR CODE HERE
-        // Switch collision types if the "C" key is pressed.
+        if (Keyboard.current.cKey.IsPressed())
+        {
+            collisionType = collisionType == CollisionType.Standard ? CollisionType.Octree : CollisionType.Standard;
+        }
     }
 }

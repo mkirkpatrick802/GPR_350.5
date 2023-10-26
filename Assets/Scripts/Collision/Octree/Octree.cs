@@ -130,7 +130,7 @@ public class OctreeNode : Octree
         int baseZone = 0;
         for (int i = 0; i < 3; i++)
         {
-            if (sphere.Center[i] >= position[i])
+            if (sphere.Center[i] > position[i])
             {
                 //Shifts the binary number to the left in respect to i:
                 //the result will either be 1, 2, 4
@@ -162,12 +162,14 @@ public class OctreeNode : Octree
         for (int i = 0; i < 8; i++)
         {
             if(i == baseZone) continue;
+            if(i > offset) continue;
+            
             //Compares the bits of offset and i to see if i is contained in offset.
             //If it is then that means baseZone - i is occupied.
             //If offset is 7 then all children are occupied.
             //If offset is 6 then the 4th and 2nd children are occupied
             //If offset is 4 then only the 4th child is occupied.
-            if ((offset & i) == 1) 
+            if (((offset & i) == i && i != 0) || (offset == 7 && i == 0)) 
             {   
                 children[i].Insert(sphere);
             }
@@ -202,7 +204,7 @@ public class OctreeNode : Octree
 /// </summary>
 public class OctreeObjects : Octree
 {
-    private List<Sphere> spheres;
+    public List<Sphere> spheres;
     
     public ICollection<Sphere> Objects => spheres;
 
@@ -236,7 +238,7 @@ public class OctreeObjects : Octree
             for (int j = i + 1; j < spheres.Count; j++)
             {
                 var s2 = spheres[j];
-                CollisionDetection.ApplyCollisionResolution(s1, s2);   
+                CollisionDetection.ApplyCollisionResolution(s1, s2);
             }
         }
     }

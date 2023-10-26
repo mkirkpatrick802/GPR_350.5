@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using static CollisionDetection;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 public class CollisionManager : MonoBehaviour
 {
@@ -26,12 +27,19 @@ public class CollisionManager : MonoBehaviour
     private List<Sphere> spheres = new List<Sphere>();
     private void Start()
     {
-        tree = Octree.Create(Vector3.zero, 5);
+        tree = Octree.Create(Vector3.zero, 2);
         
         for (int i = 0; i < nStartingParticles; i++)
         {
-            Sphere sphere = Instantiate(particlePrefab, Vector3.zero, Quaternion.identity).GetComponent<Sphere>();
-            tree.Insert(sphere);
+            float offsetX = Random.Range(-4, 4);
+            float offsetY = Random.Range(-4, 4);
+            float offsetZ = Random.Range(-4, 4);
+            Sphere sphere = Instantiate(particlePrefab, new Vector3(offsetX, offsetY, offsetZ), Quaternion.identity).GetComponent<Sphere>();
+            
+            float velX = Random.Range(-2, 2);
+            float velY = Random.Range(-2, 2);
+            float velZ = Random.Range(-2, 2);
+            sphere.velocity = new Vector3(velX, velY, velZ);
             spheres.Add(sphere);
         }
     }
@@ -39,11 +47,21 @@ public class CollisionManager : MonoBehaviour
     private void TreeCollisionResolution()
     {
         tree.ResolveCollisions();
+        
+        PlaneCollider[] planes = FindObjectsOfType<PlaneCollider>();
+        for (int i = 0; i < spheres.Count; i++)
+        {
+            Sphere s1 = spheres[i];
+            foreach (PlaneCollider plane in planes)
+            {
+                ApplyCollisionResolution(s1, plane);
+            }
+        }
     }
 
     private void StandardCollisionResolution()
     {
-        /*PlaneCollider[] planes = FindObjectsOfType<PlaneCollider>();
+        PlaneCollider[] planes = FindObjectsOfType<PlaneCollider>();
         if(spheres.Count < 1) return;
         
         for (int i = 0; i < spheres.Count; i++)
@@ -58,13 +76,19 @@ public class CollisionManager : MonoBehaviour
             {
                 ApplyCollisionResolution(s1, plane);
             }
-        }*/
+        }
     }
 
     private void FixedUpdate()
     {
         CollisionChecks = 0;
-
+        
+        tree.Clear();
+        foreach (var sphere in spheres)
+        {
+            tree.Insert(sphere);   
+        }
+        
         switch (collisionType)
         {
             case CollisionType.Standard:

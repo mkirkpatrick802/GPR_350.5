@@ -149,7 +149,7 @@ public class OctreeNode : Octree
         int offset = 0; //Offset is used to hold which children are occupied
         for (int i = 0; i < 3; i++)
         {
-            if (sphere.Radius > difference[i])
+            if (sphere.Radius > Mathf.Abs(difference[i]))
             {
                 offset += (1 << i);
             }
@@ -159,16 +159,17 @@ public class OctreeNode : Octree
         if(offset < 1) return;
         
         //Cycle through all remaining children and see if the radius is bleeding into them using the calculated offset
-        for (int i = 1; i < 8; i++)
+        for (int i = 0; i < 8; i++)
         {
+            if(i == baseZone) continue;
             //Compares the bits of offset and i to see if i is contained in offset.
             //If it is then that means baseZone - i is occupied.
             //If offset is 7 then all children are occupied.
             //If offset is 6 then the 4th and 2nd children are occupied
             //If offset is 4 then only the 4th child is occupied.
-            if ((offset & i) == i) 
+            if ((offset & i) == 1) 
             {   
-                children[baseZone - i].Insert(sphere);
+                children[i].Insert(sphere);
             }
         }
     }
@@ -231,10 +232,11 @@ public class OctreeObjects : Octree
         for (int i = 0; i < spheres.Count; i++)
         {
             var s1 = spheres[i];
+            
             for (int j = i + 1; j < spheres.Count; j++)
             {
                 var s2 = spheres[j];
-                CollisionDetection.ApplyCollisionResolution(s1, s2);
+                CollisionDetection.ApplyCollisionResolution(s1, s2);   
             }
         }
     }

@@ -54,7 +54,7 @@ public class CollisionManager : MonoBehaviour
             Sphere s1 = spheres[i];
             foreach (PlaneCollider plane in planes)
             {
-                ApplyCollisionResolution(s1, plane);
+                //ApplyCollisionResolution(s1, plane);
             }
         }
     }
